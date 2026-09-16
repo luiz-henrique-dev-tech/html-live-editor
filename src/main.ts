@@ -8,9 +8,16 @@ import { SAMPLE_HTML } from './sample';
 import { applyTheme, getStoredTheme, storeTheme } from './theme';
 import { loadSavedContent, saveContent } from './persistence';
 import { debounce } from './debounce';
+import { createLiveChannel, type LiveMessage } from './liveChannel';
 
 const previewFrame = document.querySelector<HTMLIFrameElement>('#preview-frame')!;
 const editorContainer = document.querySelector<HTMLElement>('#editor')!;
+const liveChannel = createLiveChannel();
+
+const broadcastLive = (html: string): void => {
+  const message: LiveMessage = { type: 'update', html };
+  liveChannel.postMessage(message);
+};
 
 const updatePreview = debounce((source: string) => {
   previewFrame.srcdoc = source;
@@ -18,14 +25,25 @@ const updatePreview = debounce((source: string) => {
 
 const persistContent = debounce((source: string) => saveContent(source), 500);
 
+const broadcastLiveDebounced = debounce(broadcastLive, 150);
+
 const initialContent = loadSavedContent() ?? SAMPLE_HTML;
 
 const editor = createEditor(editorContainer, initialContent, (value) => {
   updatePreview(value);
   persistContent(value);
+  broadcastLiveDebounced(value);
 });
 
 previewFrame.srcdoc = initialContent;
+
+// A live preview tab opened after this session started has no content yet;
+// it asks for the current value on load, and this responds immediately.
+liveChannel.onmessage = (event: MessageEvent<LiveMessage>) => {
+  if (event.data.type === 'request') {
+    broadcastLive(editor.getValue());
+  }
+};
 
 let theme = getStoredTheme();
 applyTheme(theme);
@@ -44,6 +62,10 @@ const toggleTheme = (): void => {
 
 const actions: Record<string, () => void> = {
   'btn-preview': () => openPreviewInNewTab(editor.getValue()),
+  'btn-live-preview': () => {
+    broadcastLive(editor.getValue());
+    window.open('/preview.html', '_blank', 'noopener,noreferrer');
+  },
   'btn-highlight': () => {
     const source = editor.getValue();
     void import('./highlightView').then(({ openHighlightInNewTab }) => openHighlightInNewTab(source));
@@ -92,6 +114,7 @@ const SHORTCUTS: Record<string, () => void> = {
   Digit5: () => actions['btn-collapse']!(),
   Digit6: () => actions['btn-sample']!(),
   Digit7: () => actions['btn-clear']!(),
+  Digit8: () => actions['btn-live-preview']!(),
 };
 
 window.addEventListener('keydown', (event) => {

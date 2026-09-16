@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Live Preview</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+      }
+      iframe {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border: none;
+      }
+    </style>
+  </head>
+  <body>
+    <iframe
+      id="preview-frame"
+      title="Pré-visualização ao vivo"
+      sandbox="allow-scripts allow-forms allow-popups"
+    ></iframe>
+    <script type="module" src="/src/previewPage.ts"></script>
+  </body>
+</html>

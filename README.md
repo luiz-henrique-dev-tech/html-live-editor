@@ -12,18 +12,19 @@ Ferramentas desse tipo parecem simples, mas escondem alguns detalhes que valem a
 
 ## Funcionalidades
 
-| Botão            | Atalho | O que faz                                                                                           |
-| ---------------- | ------ | --------------------------------------------------------------------------------------------------- |
-| Preview          | Alt+1  | Abre o HTML renderizado em uma nova aba                                                             |
-| Highlight        | Alt+2  | Abre o código com destaque de sintaxe (highlight.js) em uma nova aba, com busca nativa do navegador |
-| Format           | Alt+3  | Formata o HTML (js-beautify)                                                                        |
-| Expand all       | Alt+4  | Desfaz todo o dobramento de código                                                                  |
-| Collapse all     | Alt+5  | Dobra todo bloco dobrável                                                                           |
-| Sample           | Alt+6  | Insere um HTML de exemplo                                                                           |
-| Clear            | Alt+7  | Limpa o editor                                                                                      |
-| Import from file |        | Carrega um arquivo `.html` local no editor                                                          |
-| Export to file   |        | Baixa o conteúdo atual como `.html`                                                                 |
-| Dark mode        |        | Alterna tema, persistido em `localStorage`                                                          |
+| Botão            | Atalho | O que faz                                                                                                                                       |
+| ---------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Preview          | Alt+1  | Abre o HTML renderizado em uma nova aba (uma foto do conteúdo no momento do clique)                                                             |
+| Live preview     | Alt+8  | Abre a pré-visualização em uma nova aba ou janela que continua atualizando em tempo real, útil para deixar em um segundo monitor enquanto edita |
+| Highlight        | Alt+2  | Abre o código com destaque de sintaxe (highlight.js) em uma nova aba, com busca nativa do navegador                                             |
+| Format           | Alt+3  | Formata o HTML (js-beautify)                                                                                                                    |
+| Expand all       | Alt+4  | Desfaz todo o dobramento de código                                                                                                              |
+| Collapse all     | Alt+5  | Dobra todo bloco dobrável                                                                                                                       |
+| Sample           | Alt+6  | Insere um HTML de exemplo                                                                                                                       |
+| Clear            | Alt+7  | Limpa o editor                                                                                                                                  |
+| Import from file |        | Carrega um arquivo `.html` local no editor                                                                                                      |
+| Export to file   |        | Baixa o conteúdo atual como `.html`                                                                                                             |
+| Dark mode        |        | Alterna tema, persistido em `localStorage`                                                                                                      |
 
 O conteúdo do editor também é salvo automaticamente em `localStorage`, então recarregar a página não perde o trabalho.
 
@@ -32,6 +33,7 @@ O conteúdo do editor também é salvo automaticamente em `localStorage`, então
 - **Pré-visualização isolada:** o iframe da pré-visualização usa `sandbox="allow-scripts allow-forms allow-popups"`, sem `allow-same-origin`. Um script no HTML do usuário roda, mas em uma origem opaca, sem acesso ao DOM da página principal.
 - **Abrir em nova aba sem vazar memória:** tanto o Preview quanto o Highlight usam `URL.createObjectURL`, sempre revogado (`URL.revokeObjectURL`) alguns segundos depois de abrir a aba.
 - **Highlight sempre escapa antes de destacar:** a view de código destacado passa pelo highlight.js, que escapa o HTML de entrada antes de aplicar as classes de sintaxe. Coberto por teste (`highlightView.test.ts`) verificando que um `<script>` no código de entrada nunca aparece como tag executável na página de saída, só como texto.
+- **Sincronização entre abas sem servidor:** o Live preview usa `BroadcastChannel`, que só entrega mensagem entre abas da mesma origem, no mesmo navegador. Nenhum conteúdo do editor sai da máquina do usuário, nem para sincronizar as duas telas.
 
 ## Rodando localmente
 
@@ -52,6 +54,7 @@ npm run test:e2e      # Playwright, contra a aplicação real rodando
 
 - O bundle final inclui o CodeMirror com suporte a HTML (que carrega parsers aninhados de CSS e JS para `<style>`/`<script>`), então fica em torno de 190KB gzipado. O highlight.js é carregado sob demanda (`import()` dinâmico), só quando o botão Highlight é clicado.
 - Não há teste automatizado de Expand/Collapse all: a asserção visual de dobramento de código no CodeMirror não tem uma forma limpa de verificar via DOM sem acoplar o teste aos detalhes internos da extensão de fold.
+- Live preview funciona entre abas ou janelas do mesmo navegador, na mesma origem. Não funciona entre navegadores diferentes, nem entre dispositivos diferentes.
 
 ## Licença
 

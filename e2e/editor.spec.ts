@@ -91,7 +91,7 @@ test('About dialog opens and closes', async ({ page }) => {
 
 test('Preview opens the rendered page in a new tab', async ({ page, context }) => {
   const pagePromise = context.waitForEvent('page');
-  await page.getByRole('button', { name: 'Preview' }).click();
+  await page.locator('#btn-preview').click();
   const newPage = await pagePromise;
 
   await expect(newPage.getByRole('heading', { name: 'Hello, world!' })).toBeVisible();
@@ -103,4 +103,32 @@ test('Highlight opens a read-only syntax-highlighted view in a new tab', async (
   const newPage = await pagePromise;
 
   await expect(newPage.locator('pre code')).toContainText('Hello, world!');
+});
+
+test('Live preview opens with the current content and keeps updating as you type', async ({ page, context }) => {
+  const pagePromise = context.waitForEvent('page');
+  await page.locator('#btn-live-preview').click();
+  const livePage = await pagePromise;
+
+  const liveFrame = livePage.frameLocator('#preview-frame');
+  await expect(liveFrame.getByRole('heading', { name: 'Hello, world!' })).toBeVisible();
+
+  await page.locator('.cm-content').click();
+  await page.keyboard.press('Control+End');
+  await page.keyboard.type('<h2>Second screen</h2>');
+
+  await expect(liveFrame.getByRole('heading', { name: 'Second screen' })).toBeVisible();
+});
+
+test('Live preview opened before any edits still receives the current content', async ({ page, context }) => {
+  await page.getByRole('button', { name: 'Clear' }).click();
+  await page.locator('.cm-content').click();
+  await page.keyboard.type('<p>Already here before the tab opened</p>');
+
+  const pagePromise = context.waitForEvent('page');
+  await page.locator('#btn-live-preview').click();
+  const livePage = await pagePromise;
+
+  const liveFrame = livePage.frameLocator('#preview-frame');
+  await expect(liveFrame.getByText('Already here before the tab opened')).toBeVisible();
 });
