@@ -8,7 +8,7 @@ import {
   syntaxHighlighting,
   defaultHighlightStyle,
 } from '@codemirror/language';
-import { defaultKeymap, history, historyKeymap, indentWithTab } from '@codemirror/commands';
+import { defaultKeymap, history, historyKeymap, indentWithTab, undo, redo } from '@codemirror/commands';
 import { oneDark } from '@codemirror/theme-one-dark';
 
 const themeCompartment = new Compartment();
@@ -18,6 +18,8 @@ export interface EditorHandle {
   getValue: () => string;
   setValue: (value: string) => void;
   setDark: (dark: boolean) => void;
+  undo: () => void;
+  redo: () => void;
 }
 
 export const createEditor = (
@@ -56,6 +58,12 @@ export const createEditor = (
     },
     setDark: (dark: boolean) => {
       view.dispatch({ effects: themeCompartment.reconfigure(dark ? oneDark : []) });
+    },
+    undo: () => {
+      undo(view);
+    },
+    redo: () => {
+      redo(view);
     },
   };
 };

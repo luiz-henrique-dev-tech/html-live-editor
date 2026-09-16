@@ -2,13 +2,14 @@ import './style.css';
 import { createEditor } from './editor';
 import { collapseAll, expandAll } from './folding';
 import { formatHtml } from './format';
-import { openPreviewInNewTab } from './previewWindow';
 import { readFileAsText, exportToFile } from './fileIO';
 import { SAMPLE_HTML } from './sample';
 import { applyTheme, getStoredTheme, storeTheme } from './theme';
 import { loadSavedContent, saveContent } from './persistence';
 import { debounce } from './debounce';
 import { createLiveChannel, type LiveMessage } from './liveChannel';
+import { createVersionsPanel } from './versionsPanel';
+import { createTemplatesPanel } from './templatesPanel';
 
 const previewFrame = document.querySelector<HTMLIFrameElement>('#preview-frame')!;
 const editorContainer = document.querySelector<HTMLElement>('#editor')!;
@@ -60,21 +61,27 @@ const toggleTheme = (): void => {
   themeButton.textContent = theme === 'dark' ? 'Light mode' : 'Dark mode';
 };
 
+const versionsDialog = document.querySelector<HTMLDialogElement>('#versions-dialog')!;
+const versionsPanel = createVersionsPanel(versionsDialog, editor);
+
+const templatesDialog = document.querySelector<HTMLDialogElement>('#templates-dialog')!;
+const templatesPanel = createTemplatesPanel(templatesDialog, editor);
+
 const actions: Record<string, () => void> = {
-  'btn-preview': () => openPreviewInNewTab(editor.getValue()),
+  'btn-undo': () => editor.undo(),
+  'btn-redo': () => editor.redo(),
+  'btn-format': () => editor.setValue(formatHtml(editor.getValue())),
+  'btn-expand': () => expandAll(editor.view),
+  'btn-collapse': () => collapseAll(editor.view),
+  'btn-templates': () => templatesPanel.open(),
+  'btn-sample': () => editor.setValue(SAMPLE_HTML),
+  'btn-clear': () => editor.setValue(''),
+  'btn-save-version': () => versionsPanel.saveCurrent(),
+  'btn-versions': () => versionsPanel.open(),
   'btn-live-preview': () => {
     broadcastLive(editor.getValue());
     window.open('/preview.html', '_blank', 'noopener,noreferrer');
   },
-  'btn-highlight': () => {
-    const source = editor.getValue();
-    void import('./highlightView').then(({ openHighlightInNewTab }) => openHighlightInNewTab(source));
-  },
-  'btn-format': () => editor.setValue(formatHtml(editor.getValue())),
-  'btn-expand': () => expandAll(editor.view),
-  'btn-collapse': () => collapseAll(editor.view),
-  'btn-sample': () => editor.setValue(SAMPLE_HTML),
-  'btn-clear': () => editor.setValue(''),
 };
 
 for (const [id, action] of Object.entries(actions)) {
@@ -105,16 +112,21 @@ document.querySelector<HTMLButtonElement>('#btn-export')!.addEventListener('clic
 const aboutDialog = document.querySelector<HTMLDialogElement>('#about-dialog')!;
 document.querySelector<HTMLButtonElement>('#btn-about')!.addEventListener('click', () => aboutDialog.showModal());
 document.querySelector<HTMLButtonElement>('#btn-about-close')!.addEventListener('click', () => aboutDialog.close());
+document
+  .querySelector<HTMLButtonElement>('#btn-versions-close')!
+  .addEventListener('click', () => versionsDialog.close());
+document
+  .querySelector<HTMLButtonElement>('#btn-templates-close')!
+  .addEventListener('click', () => templatesDialog.close());
 
 const SHORTCUTS: Record<string, () => void> = {
-  Digit1: () => actions['btn-preview']!(),
-  Digit2: () => actions['btn-highlight']!(),
-  Digit3: () => actions['btn-format']!(),
-  Digit4: () => actions['btn-expand']!(),
-  Digit5: () => actions['btn-collapse']!(),
-  Digit6: () => actions['btn-sample']!(),
-  Digit7: () => actions['btn-clear']!(),
-  Digit8: () => actions['btn-live-preview']!(),
+  Digit1: () => actions['btn-format']!(),
+  Digit2: () => actions['btn-expand']!(),
+  Digit3: () => actions['btn-collapse']!(),
+  Digit4: () => actions['btn-sample']!(),
+  Digit5: () => actions['btn-clear']!(),
+  Digit6: () => actions['btn-save-version']!(),
+  Digit7: () => actions['btn-live-preview']!(),
 };
 
 window.addEventListener('keydown', (event) => {

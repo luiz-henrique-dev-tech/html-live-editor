@@ -42,6 +42,25 @@ test('Sample restores the example content after Clear', async ({ page }) => {
   expect(await editorContent(page)).toContain('Hello, world!');
 });
 
+test('Undo reverts the last change and Redo brings it back', async ({ page }) => {
+  await page.getByRole('button', { name: 'Clear' }).click();
+  expect(await editorContent(page)).toBe('');
+
+  // CodeMirror groups replace transactions into one undo step when they land
+  // within its history grouping window; two clicks this close together is
+  // not a realistic editing pace, so this waits past that window on purpose.
+  await page.waitForTimeout(600);
+
+  await page.getByRole('button', { name: 'Sample' }).click();
+  expect(await editorContent(page)).toContain('Hello, world!');
+
+  await page.getByRole('button', { name: 'Undo' }).click();
+  expect(await editorContent(page)).toBe('');
+
+  await page.getByRole('button', { name: 'Redo' }).click();
+  expect(await editorContent(page)).toContain('Hello, world!');
+});
+
 test('Dark mode toggles the theme and persists across a reload', async ({ page }) => {
   await page.getByRole('button', { name: 'Dark mode' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
@@ -72,10 +91,10 @@ test('Import from file loads a local HTML file into the editor', async ({ page }
 });
 
 test('keyboard shortcuts trigger the same actions as their buttons', async ({ page }) => {
-  await page.keyboard.press('Alt+Digit7');
+  await page.keyboard.press('Alt+Digit5');
   expect(await editorContent(page)).toBe('');
 
-  await page.keyboard.press('Alt+Digit6');
+  await page.keyboard.press('Alt+Digit4');
   expect(await editorContent(page)).toContain('Hello, world!');
 });
 
@@ -87,22 +106,6 @@ test('About dialog opens and closes', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Fechar' }).click();
   await expect(dialog).toBeHidden();
-});
-
-test('Preview opens the rendered page in a new tab', async ({ page, context }) => {
-  const pagePromise = context.waitForEvent('page');
-  await page.locator('#btn-preview').click();
-  const newPage = await pagePromise;
-
-  await expect(newPage.getByRole('heading', { name: 'Hello, world!' })).toBeVisible();
-});
-
-test('Highlight opens a read-only syntax-highlighted view in a new tab', async ({ page, context }) => {
-  const pagePromise = context.waitForEvent('page');
-  await page.getByRole('button', { name: 'Highlight' }).click();
-  const newPage = await pagePromise;
-
-  await expect(newPage.locator('pre code')).toContainText('Hello, world!');
 });
 
 test('Live preview opens with the current content and keeps updating as you type', async ({ page, context }) => {
@@ -131,4 +134,63 @@ test('Live preview opened before any edits still receives the current content', 
 
   const liveFrame = livePage.frameLocator('#preview-frame');
   await expect(liveFrame.getByText('Already here before the tab opened')).toBeVisible();
+});
+
+test('saving a version and restoring it round-trips the content', async ({ page }) => {
+  await page.getByRole('button', { name: 'Clear' }).click();
+  await page.locator('.cm-content').click();
+  await page.keyboard.type('<p>version one</p>');
+
+  page.once('dialog', (dialog) => dialog.accept('Primeira versão'));
+  await page.getByRole('button', { name: 'Save version' }).click();
+
+  await page.getByRole('button', { name: 'Clear' }).click();
+  expect(await editorContent(page)).toBe('');
+
+  await page.getByRole('button', { name: 'Versions' }).click();
+  await expect(page.getByText('Primeira versão')).toBeVisible();
+
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.getByRole('button', { name: 'Restaurar' }).click();
+
+  expect(await editorContent(page)).toContain('version one');
+});
+
+test('comparing a saved version against the current content shows a diff view', async ({ page }) => {
+  page.once('dialog', (dialog) => dialog.accept('Base'));
+  await page.getByRole('button', { name: 'Save version' }).click();
+
+  await page.locator('.cm-content').click();
+  await page.keyboard.press('Control+End');
+  await page.keyboard.type('<p>changed</p>');
+
+  await page.getByRole('button', { name: 'Versions' }).click();
+  await page.getByRole('button', { name: 'Comparar com atual' }).click();
+
+  await expect(page.locator('.cm-mergeView')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Voltar à lista' })).toBeVisible();
+});
+
+test('loading a template replaces the editor content', async ({ page }) => {
+  await page.getByRole('button', { name: 'Templates' }).click();
+  await expect(page.getByText('Formulário de contato')).toBeVisible();
+
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.getByRole('button', { name: /Formulário de contato/ }).click();
+
+  expect(await editorContent(page)).toContain('form');
+});
+
+test('filtering templates by folder narrows the grid', async ({ page }) => {
+  await page.getByRole('button', { name: 'Templates' }).click();
+  await page.getByRole('button', { name: 'E-mail', exact: true }).click();
+
+  await expect(page.getByText('E-mail HTML: newsletter')).toBeVisible();
+  await expect(page.getByText('Formulário de contato')).toBeHidden();
+});
+
+test('capture a screenshot for the README', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: 'docs/screenshot.png' });
 });
