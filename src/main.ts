@@ -1,0 +1,103 @@
+import './style.css';
+import { createEditor } from './editor';
+import { collapseAll, expandAll } from './folding';
+import { formatHtml } from './format';
+import { openPreviewInNewTab } from './previewWindow';
+import { readFileAsText, exportToFile } from './fileIO';
+import { SAMPLE_HTML } from './sample';
+import { applyTheme, getStoredTheme, storeTheme } from './theme';
+import { loadSavedContent, saveContent } from './persistence';
+import { debounce } from './debounce';
+
+const previewFrame = document.querySelector<HTMLIFrameElement>('#preview-frame')!;
+const editorContainer = document.querySelector<HTMLElement>('#editor')!;
+
+const updatePreview = debounce((source: string) => {
+  previewFrame.srcdoc = source;
+}, 250);
+
+const persistContent = debounce((source: string) => saveContent(source), 500);
+
+const initialContent = loadSavedContent() ?? SAMPLE_HTML;
+
+const editor = createEditor(editorContainer, initialContent, (value) => {
+  updatePreview(value);
+  persistContent(value);
+});
+
+previewFrame.srcdoc = initialContent;
+
+let theme = getStoredTheme();
+applyTheme(theme);
+editor.setDark(theme === 'dark');
+
+const themeButton = document.querySelector<HTMLButtonElement>('#btn-theme')!;
+themeButton.textContent = theme === 'dark' ? 'Light mode' : 'Dark mode';
+
+const toggleTheme = (): void => {
+  theme = theme === 'dark' ? 'light' : 'dark';
+  applyTheme(theme);
+  storeTheme(theme);
+  editor.setDark(theme === 'dark');
+  themeButton.textContent = theme === 'dark' ? 'Light mode' : 'Dark mode';
+};
+
+const actions: Record<string, () => void> = {
+  'btn-preview': () => openPreviewInNewTab(editor.getValue()),
+  'btn-highlight': () => {
+    const source = editor.getValue();
+    void import('./highlightView').then(({ openHighlightInNewTab }) => openHighlightInNewTab(source));
+  },
+  'btn-format': () => editor.setValue(formatHtml(editor.getValue())),
+  'btn-expand': () => expandAll(editor.view),
+  'btn-collapse': () => collapseAll(editor.view),
+  'btn-sample': () => editor.setValue(SAMPLE_HTML),
+  'btn-clear': () => editor.setValue(''),
+};
+
+for (const [id, action] of Object.entries(actions)) {
+  document.querySelector<HTMLButtonElement>(`#${id}`)!.addEventListener('click', action);
+}
+
+themeButton.addEventListener('click', toggleTheme);
+
+const fileInput = document.querySelector<HTMLInputElement>('#file-input')!;
+document.querySelector<HTMLButtonElement>('#btn-import')!.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => {
+  const file = fileInput.files?.[0];
+  if (!file) return;
+  readFileAsText(file)
+    .then((content) => editor.setValue(content))
+    .catch(() => {
+      // Silently ignore an unreadable file; the editor content is unchanged.
+    })
+    .finally(() => {
+      fileInput.value = '';
+    });
+});
+
+document.querySelector<HTMLButtonElement>('#btn-export')!.addEventListener('click', () => {
+  exportToFile(editor.getValue());
+});
+
+const aboutDialog = document.querySelector<HTMLDialogElement>('#about-dialog')!;
+document.querySelector<HTMLButtonElement>('#btn-about')!.addEventListener('click', () => aboutDialog.showModal());
+document.querySelector<HTMLButtonElement>('#btn-about-close')!.addEventListener('click', () => aboutDialog.close());
+
+const SHORTCUTS: Record<string, () => void> = {
+  Digit1: () => actions['btn-preview']!(),
+  Digit2: () => actions['btn-highlight']!(),
+  Digit3: () => actions['btn-format']!(),
+  Digit4: () => actions['btn-expand']!(),
+  Digit5: () => actions['btn-collapse']!(),
+  Digit6: () => actions['btn-sample']!(),
+  Digit7: () => actions['btn-clear']!(),
+};
+
+window.addEventListener('keydown', (event) => {
+  if (!event.altKey) return;
+  const handler = SHORTCUTS[event.code];
+  if (!handler) return;
+  event.preventDefault();
+  handler();
+});

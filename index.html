@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HTML Live Editor</title>
+  </head>
+  <body>
+    <div id="app" class="app">
+      <aside class="sidebar" aria-label="Ferramentas">
+        <h1 class="brand">HTML Live Editor</h1>
+
+        <div class="button-group">
+          <button id="btn-preview" class="tool-button" type="button"><span>Preview</span><kbd>Alt+1</kbd></button>
+          <button id="btn-highlight" class="tool-button" type="button"><span>Highlight</span><kbd>Alt+2</kbd></button>
+          <button id="btn-format" class="tool-button" type="button"><span>Format</span><kbd>Alt+3</kbd></button>
+          <button id="btn-expand" class="tool-button" type="button"><span>Expand all</span><kbd>Alt+4</kbd></button>
+          <button id="btn-collapse" class="tool-button" type="button"><span>Collapse all</span><kbd>Alt+5</kbd></button>
+          <button id="btn-sample" class="tool-button" type="button"><span>Sample</span><kbd>Alt+6</kbd></button>
+          <button id="btn-clear" class="tool-button" type="button"><span>Clear</span><kbd>Alt+7</kbd></button>
+        </div>
+
+        <div class="button-group">
+          <button id="btn-import" class="tool-button" type="button">Import from file</button>
+          <input id="file-input" type="file" accept=".html,.htm,text/html" hidden />
+          <button id="btn-export" class="tool-button" type="button">Export to file</button>
+        </div>
+
+        <div class="button-group">
+          <button id="btn-theme" class="tool-button" type="button">Dark mode</button>
+          <button id="btn-about" class="tool-button" type="button">About</button>
+        </div>
+
+        <p class="sidebar-footer">Tudo roda no seu navegador. Nada é enviado a um servidor.</p>
+      </aside>
+
+      <main class="workspace">
+        <section class="pane" aria-label="Editor de código">
+          <div id="editor" class="editor"></div>
+        </section>
+        <section class="pane" aria-label="Pré-visualização">
+          <iframe
+            id="preview-frame"
+            class="preview-frame"
+            title="Pré-visualização do HTML"
+            sandbox="allow-scripts allow-forms allow-popups"
+          ></iframe>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="about-dialog" class="about-dialog">
+      <h2>HTML Live Editor</h2>
+      <p>
+        Editor de HTML com pré-visualização ao vivo, inspirado em ferramentas como o html.onlineviewer.net. Projeto de
+        portfólio, escrito do zero: nenhum código ou recurso visual do site original foi copiado.
+      </p>
+      <p>Processamento inteiro no navegador. Nenhum dado é enviado a um servidor.</p>
+      <button id="btn-about-close" type="button">Fechar</button>
+    </dialog>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

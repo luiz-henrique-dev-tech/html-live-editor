@@ -1,0 +1,192 @@
+:root {
+  --sidebar-bg: #1e2430;
+  --sidebar-fg: #e2e8f0;
+  --sidebar-border: #313a4b;
+  --button-bg: #2b3446;
+  --button-bg-hover: #384258;
+  --workspace-bg: #ffffff;
+  --pane-border: #d8dee9;
+  --text-color: #1a202c;
+}
+
+:root[data-theme='dark'] {
+  --workspace-bg: #14181f;
+  --pane-border: #2c3446;
+  --text-color: #e2e8f0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: var(--text-color);
+  background: var(--workspace-bg);
+}
+
+.app {
+  display: flex;
+  height: 100vh;
+}
+
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--sidebar-bg);
+  color: var(--sidebar-fg);
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+.brand {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+
+.button-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid var(--sidebar-border);
+  padding-top: 12px;
+}
+
+.button-group:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.tool-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--button-bg);
+  color: var(--sidebar-fg);
+  border: none;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.tool-button:hover {
+  background: var(--button-bg-hover);
+}
+
+.tool-button:focus-visible {
+  outline: 2px solid #7dd3fc;
+  outline-offset: 2px;
+}
+
+.tool-button kbd {
+  font-size: 10px;
+  opacity: 0.6;
+  font-family: inherit;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  font-size: 11px;
+  opacity: 0.6;
+  line-height: 1.4;
+}
+
+.workspace {
+  flex: 1;
+  display: flex;
+  min-width: 0;
+}
+
+.pane {
+  flex: 1 1 50%;
+  min-width: 0;
+  display: flex;
+  border-right: 1px solid var(--pane-border);
+}
+
+.pane:last-child {
+  border-right: none;
+}
+
+.editor {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.editor .cm-editor {
+  height: 100%;
+}
+
+.preview-frame {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: #ffffff;
+}
+
+.about-dialog {
+  max-width: 420px;
+  border: none;
+  border-radius: 8px;
+  padding: 20px;
+  color: var(--text-color);
+  background: var(--workspace-bg);
+}
+
+.about-dialog::backdrop {
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.about-dialog h2 {
+  margin-top: 0;
+  font-size: 16px;
+}
+
+.about-dialog p {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+@media (max-width: 720px) {
+  .app {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    overflow-x: auto;
+  }
+
+  .button-group {
+    flex-direction: row;
+    border-top: none;
+    padding-top: 0;
+  }
+
+  .workspace {
+    flex-direction: column;
+    height: 80vh;
+  }
+
+  .pane {
+    border-right: none;
+    border-bottom: 1px solid var(--pane-border);
+  }
+}
