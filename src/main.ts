@@ -87,7 +87,7 @@ const actions: Record<string, () => void> = {
   'btn-versions': () => versionsPanel.open(),
   'btn-live-preview': () => {
     broadcastLive(editor.getValue());
-    window.open('/preview.html', '_blank', 'noopener,noreferrer');
+    window.open(`${import.meta.env.BASE_URL}preview.html`, '_blank', 'noopener,noreferrer');
   },
 };
 
