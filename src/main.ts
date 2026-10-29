@@ -8,10 +8,12 @@ import { applyTheme, getStoredTheme, storeTheme } from './theme';
 import { loadSavedContent, saveContent } from './persistence';
 import { debounce } from './debounce';
 import { createLiveChannel, type LiveMessage } from './liveChannel';
+import { onSandboxReady, sendToSandbox, SANDBOX_URL } from './sandboxChannel';
 import { createVersionsPanel } from './versionsPanel';
 import { createTemplatesPanel } from './templatesPanel';
 
 const previewFrame = document.querySelector<HTMLIFrameElement>('#preview-frame')!;
+previewFrame.src = SANDBOX_URL;
 const editorContainer = document.querySelector<HTMLElement>('#editor')!;
 const liveChannel = createLiveChannel();
 
@@ -21,7 +23,7 @@ const broadcastLive = (html: string): void => {
 };
 
 const updatePreview = debounce((source: string) => {
-  previewFrame.srcdoc = source;
+  sendToSandbox(previewFrame, source);
 }, 250);
 
 const persistContent = debounce((source: string) => saveContent(source), 500);
@@ -36,7 +38,12 @@ const editor = createEditor(editorContainer, initialContent, (value) => {
   broadcastLiveDebounced(value);
 });
 
-previewFrame.srcdoc = initialContent;
+// The preview pane navigates to sandbox.html for real (not via srcdoc), so it
+// can carry its own, more permissive CSP without that policy being inherited
+// from this document — see sandboxHost.ts. It announces readiness by message
+// instead of relying on the iframe's load event, since that event can fire
+// before this script attaches a listener for it.
+onSandboxReady(previewFrame, () => sendToSandbox(previewFrame, editor.getValue()));
 
 // A live preview tab opened after this session started has no content yet;
 // it asks for the current value on load, and this responds immediately.

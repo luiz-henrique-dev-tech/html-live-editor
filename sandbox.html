@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Sandbox</title>
+  </head>
+  <body>
+    <script>
+      // This document is the actual render target for arbitrary user HTML/JS.
+      // It only ever runs inside an iframe with
+      // sandbox="allow-scripts allow-forms allow-popups" (no allow-same-origin),
+      // so it has an opaque origin with no access to the parent app's DOM,
+      // cookies, or localStorage. That isolation, not this page's own CSP, is
+      // what contains whatever the previewed content does. Its own
+      // Content-Security-Policy header (set at the hosting layer) is
+      // deliberately permissive so inline <script> tags the user types still
+      // run, which is the entire point of the tool.
+      //
+      // This bootstrap is a plain inline classic script, not an ES module:
+      // an opaque-origin document fetches module scripts in CORS mode, which
+      // the static host has no reason to allow, so a `<script type="module"
+      // src="...">` tag here fails to load at all. An inline script has
+      // nothing to fetch, so that restriction does not apply.
+      // The parent may still be parsing/executing its own (much larger) bundle
+      // when this tiny document finishes loading, so a single "ready" ping
+      // sent once here can arrive before the parent has attached its message
+      // listener and be lost with nobody to resend it. Repeating the ping
+      // until the first update arrives makes the handshake work regardless
+      // of which side finishes loading first.
+      let readyInterval = setInterval(() => {
+        window.parent.postMessage({ type: 'ready' }, '*');
+      }, 50);
+
+      // document.open() drops every listener previously attached to window,
+      // not just the document's own nodes, so onMessage re-attaches itself
+      // right after each write. Without this, only the first update would
+      // ever reach the preview.
+      const onMessage = (event) => {
+        if (event.source !== window.parent) return;
+        if (!event.data || event.data.type !== 'update') return;
+
+        clearInterval(readyInterval);
+        document.open();
+        document.write(event.data.html);
+        document.close();
+        window.addEventListener('message', onMessage);
+      };
+
+      window.addEventListener('message', onMessage);
+    </script>
+  </body>
+</html>

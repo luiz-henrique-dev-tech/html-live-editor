@@ -141,8 +141,9 @@ test('saving a version and restoring it round-trips the content', async ({ page 
   await page.locator('.cm-content').click();
   await page.keyboard.type('<p>version one</p>');
 
-  page.once('dialog', (dialog) => dialog.accept('Primeira versão'));
   await page.getByRole('button', { name: 'Save version' }).click();
+  await page.locator('.dialog-input').fill('Primeira versão');
+  await page.getByRole('button', { name: 'Salvar' }).click();
 
   await page.getByRole('button', { name: 'Clear' }).click();
   expect(await editorContent(page)).toBe('');
@@ -150,15 +151,16 @@ test('saving a version and restoring it round-trips the content', async ({ page 
   await page.getByRole('button', { name: 'Versions' }).click();
   await expect(page.getByText('Primeira versão')).toBeVisible();
 
-  page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: 'Restaurar' }).click();
+  await page.locator('dialog.app-dialog:not([id])').getByRole('button', { name: 'Restaurar' }).click();
 
   expect(await editorContent(page)).toContain('version one');
 });
 
 test('comparing a saved version against the current content shows a diff view', async ({ page }) => {
-  page.once('dialog', (dialog) => dialog.accept('Base'));
   await page.getByRole('button', { name: 'Save version' }).click();
+  await page.locator('.dialog-input').fill('Base');
+  await page.getByRole('button', { name: 'Salvar' }).click();
 
   await page.locator('.cm-content').click();
   await page.keyboard.press('Control+End');
@@ -175,8 +177,8 @@ test('loading a template replaces the editor content', async ({ page }) => {
   await page.getByRole('button', { name: 'Templates' }).click();
   await expect(page.getByText('Formulário de contato')).toBeVisible();
 
-  page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: /Formulário de contato/ }).click();
+  await page.getByRole('button', { name: 'Carregar' }).click();
 
   expect(await editorContent(page)).toContain('form');
 });

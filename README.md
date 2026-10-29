@@ -40,9 +40,12 @@ Uma pequena biblioteca de templates iniciais (landing page, formulário de conta
 
 ## Decisões de segurança
 
-- **Pré-visualização isolada:** o iframe da pré-visualização usa `sandbox="allow-scripts allow-forms allow-popups"`, sem `allow-same-origin`. Um script no HTML do usuário roda, mas em uma origem opaca, sem acesso ao DOM da página principal.
+- **Pré-visualização isolada:** o iframe da pré-visualização usa `sandbox="allow-scripts allow-forms allow-popups"`, sem `allow-same-origin`. Um script no HTML do usuário roda, mas em uma origem opaca, sem acesso ao DOM, aos cookies ou ao `localStorage` da página principal.
+- **A pré-visualização navega para uma página própria (`sandbox.html`), em vez de usar `srcdoc`:** um iframe `srcdoc` herda o Content-Security-Policy do documento pai, mesmo sendo sandboxed. Isso foi confirmado na prática: com um `script-src` estrito no app principal, o `<script>` que o próprio usuário digita no HTML parava de executar dentro do preview. Como esse app não tem backend, a única forma de dar um CSP de verdade ao app principal sem quebrar a função central da ferramenta é isolar o conteúdo arbitrário numa página separada, carregada por navegação real (não `srcdoc`), que recebe o HTML por `postMessage` e escreve com `document.write`. Essa página carrega seu próprio CSP, propositalmente permissivo, enquanto o app principal fica com `script-src 'self'`, sem `unsafe-inline` em nenhum lugar do código confiável.
+- **Cabeçalhos HTTP por rota (`vercel.json`):** o CSP estrito do app principal e o CSP permissivo do `sandbox.html` são dois conjuntos de regras com `source` diferentes, nunca um `(.*)` genérico, porque a Vercel combina regras que casam com o mesmo caminho em vez de a mais específica vencer. Um `X-Frame-Options: DENY` genérico, por exemplo, bloquearia o próprio app de exibir seu iframe de preview.
 - **Sincronização entre abas sem servidor:** o Live preview usa `BroadcastChannel`, que só entrega mensagem entre abas da mesma origem, no mesmo navegador. Nenhum conteúdo do editor sai da máquina do usuário, nem para sincronizar as duas telas.
-- **Versões e templates nunca viram `innerHTML` direto:** tanto o rótulo de uma versão salva quanto o nome de um template passam por `escapeHtml` antes de entrar no DOM da lista, mesmo sendo dado que o próprio usuário digitou.
+- **Versões e templates nunca viram `innerHTML` direto:** tanto o rótulo de uma versão salva quanto o nome de um template passam por `escapeHtml` antes de entrar no DOM da lista, mesmo sendo dado que o próprio usuário digitou. O mesmo vale pros diálogos de confirmação (`src/dialogs.ts`), que substituíram `window.confirm`/`window.prompt` nativos.
+- **Risco aceito e não escondido:** o conteúdo dentro do `sandbox.html` pode fazer requisição de rede para qualquer lugar (imagem, `fetch`, formulário) a partir do navegador de quem está usando a ferramenta. É o mesmo risco que qualquer ferramenta de preview de HTML/JS arbitrário aceita (CodeSandbox, JSFiddle, CodePen), contido pela origem opaca do sandbox, não eliminado por completo.
 
 ## Rodando localmente
 
@@ -50,6 +53,10 @@ Uma pequena biblioteca de templates iniciais (landing page, formulário de conta
 npm install
 npm run dev       # http://localhost:5173
 ```
+
+## Deploy
+
+O deploy de produção é na Vercel, com os cabeçalhos HTTP de `vercel.json` (ver "Decisões de segurança"). Uma build com `GITHUB_PAGES=true npm run build` também existe, para publicar uma versão de teste rápido no GitHub Pages: ela usa `base: '/html-live-editor/'` em vez da raiz, já que o Pages serve um site de projeto num subcaminho. Essa versão no Pages não tem os cabeçalhos de segurança (GitHub Pages não permite configurar cabeçalho HTTP customizado), só a Vercel tem a configuração completa.
 
 ## Testes
 

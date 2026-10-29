@@ -1,6 +1,7 @@
 import type { EditorHandle } from './editor';
 import { filterTemplates, listFolders, listTags, type Template } from './templates';
 import { escapeHtml } from './escapeHtml';
+import { confirmDialog } from './dialogs';
 
 export const createTemplatesPanel = (dialog: HTMLDialogElement, editor: EditorHandle) => {
   const folderList = dialog.querySelector<HTMLElement>('#templates-folders')!;
@@ -75,8 +76,12 @@ export const createTemplatesPanel = (dialog: HTMLDialogElement, editor: EditorHa
       <span class="template-folder">${escapeHtml(template.folder)}</span>
       <span class="template-tags">${template.tags.map((tag) => `#${escapeHtml(tag)}`).join(' ')}</span>
     `;
-    card.addEventListener('click', () => {
-      if (window.confirm(`Carregar "${template.label}"? Isso substitui o conteúdo atual do editor.`)) {
+    card.addEventListener('click', async () => {
+      const confirmed = await confirmDialog(
+        `Carregar "${template.label}"? Isso substitui o conteúdo atual do editor.`,
+        'Carregar',
+      );
+      if (confirmed) {
         editor.setValue(template.content);
         dialog.close();
       }

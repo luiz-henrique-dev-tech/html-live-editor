@@ -3,6 +3,7 @@ import type { EditorHandle } from './editor';
 import { createDiffView } from './diffView';
 import { deleteVersion, listVersions, saveVersion, type SavedVersion } from './versions';
 import { escapeHtml } from './escapeHtml';
+import { confirmDialog, promptDialog } from './dialogs';
 
 const formatDate = (iso: string): string =>
   new Date(iso).toLocaleString('pt-BR', {
@@ -60,8 +61,12 @@ export const createVersionsPanel = (dialog: HTMLDialogElement, editor: EditorHan
     restoreButton.type = 'button';
     restoreButton.className = 'pill-button pill-subtle';
     restoreButton.textContent = 'Restaurar';
-    restoreButton.addEventListener('click', () => {
-      if (window.confirm(`Restaurar "${version.label}"? Isso substitui o conteúdo atual do editor.`)) {
+    restoreButton.addEventListener('click', async () => {
+      const confirmed = await confirmDialog(
+        `Restaurar "${version.label}"? Isso substitui o conteúdo atual do editor.`,
+        'Restaurar',
+      );
+      if (confirmed) {
         editor.setValue(version.content);
         dialog.close();
       }
@@ -77,8 +82,9 @@ export const createVersionsPanel = (dialog: HTMLDialogElement, editor: EditorHan
     deleteButton.type = 'button';
     deleteButton.className = 'pill-button pill-subtle';
     deleteButton.textContent = 'Remover';
-    deleteButton.addEventListener('click', () => {
-      if (window.confirm(`Remover "${version.label}"? Essa ação não pode ser desfeita.`)) {
+    deleteButton.addEventListener('click', async () => {
+      const confirmed = await confirmDialog(`Remover "${version.label}"? Essa ação não pode ser desfeita.`, 'Remover');
+      if (confirmed) {
         deleteVersion(version.id);
         renderList();
       }
@@ -104,8 +110,8 @@ export const createVersionsPanel = (dialog: HTMLDialogElement, editor: EditorHan
       renderList();
       dialog.showModal();
     },
-    saveCurrent: (): void => {
-      const input = window.prompt('Nome da versão (opcional):');
+    saveCurrent: async (): Promise<void> => {
+      const input = await promptDialog('Nome da versão (opcional):');
       if (input === null) return;
       saveVersion(editor.getValue(), input.trim() || undefined);
     },
